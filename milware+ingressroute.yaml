@@ -1,0 +1,121 @@
+#se auth, redirect http --to--https####
+########################################################
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dops-master-service-ingress-route-http-to-https
+  namespace: dops-master
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`elg.ksi.kiev.ua`)
+      services:
+        - name: apache1-test-app-service
+          namespace: dops-master
+          port: 80
+      middlewares:
+        - name: api-http-redirect
+          namespace: dops-master
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: api-http-redirect
+  namespace: dops-master
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+    port: "443"
+#########################################################
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dops-master-apache0-service-ingress
+  namespace: dops-master
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`elg.ksi.kiev.ua`)
+      services:
+        - name: apache0-test-app-service
+          namespace: dops-master
+          port: 80
+#      middlewares:
+#        - name: master-base-auth
+#          namespace: dops-master
+###############################################################
+    - kind: Rule
+      match: Host(`elg.ksi.kiev.ua`) && PathPrefix(`/apache1`)
+      services:
+        - name: apache1-test-app-service
+          namespace: dops-master
+          port: 80
+      middlewares:
+        - name: app-prefix
+          namespace: dops-master
+
+
+###############################################################
+    - kind: Rule
+      match: Host(`elg.ksi.kiev.ua`) && PathPrefix(`/apache2`)
+      services:
+        - name: apache2-test-app-service
+          namespace: dops-master
+          port: 80
+      middlewares:
+        - name: app-prefix
+          namespace: dops-master
+  tls:
+    secretName: dev-cert-site
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: master-base-auth
+  namespace: dops-master
+spec:
+  basicAuth:
+    secret:  master-base-authsecret
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: app-prefix
+  namespace: dops-master
+spec:
+  stripPrefix:
+    prefixes:
+      - "/apache1"
+      - "/apache2"
+#      - "/service1"
+#      - "/service2"
+    forceSlash: false
+
+
+##########################################
+#    - kind: Rule
+#      match: Host(`elg.ksi.kiev.ua`) && PathPrefix(`/apache2`)
+#      middlewares:
+#        - name: app-prefix
+#          namespace: dops-master
+#      services:
+#        - name: apache2-test-app-service
+#          namespace: dops-master
+#          port: 80
+###########################################
+#    - kind: Rule
+#      match: Host(`elg.ksi.kiev.ua`) && PathPrefix(`/service1`)
+#      middlewares:
+#        - name: app-prefix
+#          namespace: dops-master
+#      services:
+#        - name: service1
+#          namespace: dops-master
+#          port: 80

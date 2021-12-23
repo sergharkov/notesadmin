@@ -1,0 +1,64 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: apache1-test-app-service
+  name: apache1-test-app-service
+  namespace: dops-master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apache1-test-app-service
+  template:
+    metadata:
+      labels:
+        app: apache1-test-app-service
+    spec:
+      containers:
+      - image: httpd:2.4
+        name: apache
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /usr/local/apache2/htdocs
+          name: apache1-test-volume
+      volumes:
+        - name: apache1-test-volume
+          configMap:
+            name: apache1-test-index-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apache1-test-app-service
+  namespace: dops-master
+spec:
+  selector:
+    app: apache1-test-app-service
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: apache1-test-index-html
+  namespace: dops-master
+data:
+  index.html: |-
+     <!doctype html>
+     <html>
+        <head>
+          <title>Welcome to your secure web page using Nginx</title>
+        </head>
+        <body>
+          <p>1111111111111111111111111111111111111111111111111111111111</p>
+          <p>This will be a secure web page at the end of the tutorial!</p>
+        </body>
+      </html>
