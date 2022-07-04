@@ -1,11 +1,9 @@
 #Migrate from TFS server $URL_TFSserver 
 #https://docs.microsoft.com/en-us/azure/devops/repos/git/import-from-tfvc?view=azure-devops
 #
-#Mgrate only one branche with all commites 
+#Migrate only one branche with all commites 
 #Before running script you have to create new repo type GIT $Git_Repo
 #
-#
-
 
 cd  e:\tfs-git
 dir
