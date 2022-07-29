@@ -1,0 +1,27 @@
+---
+- hosts: all
+  tasks:
+
+    - name: install repos
+      ignore_errors: yes
+      shell: |
+        yum install -y epel-release
+        yum install -y http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
+
+    - name: install packages
+      become: true
+      become_user: root
+      yum:
+        state: latest
+        update_cache: true
+        name:
+           - git
+           - htop
+           - wget
+           - net-tools
+           - mc
+           - ca-certificates
+
+    - name: Update timeZones to Europe/Kiev
+      timezone:
+        name: Europe/Kiev
