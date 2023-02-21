@@ -1,0 +1,29 @@
+version: "3.8"
+services:
+
+  nginx:
+    image: trafex/php-nginx
+#    ports:
+      #- 3001:8080
+    environment:
+      - REPLICA={{.Task.Slot}}
+    volumes:
+      - ./index_net1.php:/var/www/html/index.php
+    networks:
+      - inside
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+networks:
+  inside:
+    external: true 
+    name: crm_network1
+  outside:
+    external: true
+    name: ingress-routing
+

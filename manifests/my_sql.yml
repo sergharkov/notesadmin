@@ -1,0 +1,38 @@
+version: '3.7'
+services:
+
+  dev_mysql:
+    image: mysql:8.0.16
+    command: --default-authentication-plugin=mysql_native_password 
+    volumes:
+      - /home/services/my_sql/mysql_data/dev_mysql:/var/lib/mysql
+      - /home/services/my_sql/db_backup:/db_backup
+      - /home/services/my_sql/db_backup_new:/db_backup_new
+      - /home/services/my_sql/my.cnf:/etc/mysql/conf.d/docker.cnf
+    environment:
+      MYSQL_DATABASE: 'dev_mysql'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'IU5LcYaZBJXz7dfghsdfsdfsfdsdfAtIMnaXPDZqk'
+#    ports:
+#      - 3355:3306
+    networks:
+      - crm_network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+#      labels:
+#        ingress.host: INGRESSLABEL
+      resources:
+        limits:
+          memory: 2048M
+          cpus: "2"
+
+networks:
+  crm_network:
+    external: true

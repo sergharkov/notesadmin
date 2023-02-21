@@ -1,0 +1,12 @@
+stream {
+      upstream stream_backend {
+	zone tcp_servers 64k;
+	server swsvc_dev_mysql:3306;
+      }
+
+  server {
+    listen 3307;
+    proxy_pass stream_backend;
+    proxy_connect_timeout 1s;
+  }
+}

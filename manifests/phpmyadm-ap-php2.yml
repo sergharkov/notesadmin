@@ -1,0 +1,35 @@
+version: '3.7'
+services:
+
+  php_my_admin:
+    image: phpmyadmin:5.2.0-apache
+    environment:
+      - PMA_ARBITRARY=0
+      - PMA_HOSTS=swsvc-ap2_dev_mysql,dev_mysql
+      - PMA_PORT=3306
+    networks:
+      - inside
+      - outside
+#EXPOSEMYADM generate in pipilines
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      resources:
+        limits:
+          memory: 4096M
+          cpus: "2"
+      labels:
+        ingress.host: ar-php2.ksi.kiev.ua  
+
+networks:
+  inside:
+    external: true 
+    name: crm_network2
+  outside:
+    external: true
+    name: ingress-routing

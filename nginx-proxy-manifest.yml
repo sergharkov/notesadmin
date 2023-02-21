@@ -1,0 +1,45 @@
+version: "3.8"
+services:
+
+  nginx-proxy:
+    image: nginx:1.21
+    ports:
+      - 1080:80
+      - 1443:443
+      - 3307:3307
+      - 3306:3306
+    tty: true
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 4096M
+          cpus: "2"
+
+          #   failure_action: rollback
+    environment:
+      TZ: "Europe/Kyiv"
+    volumes:
+      - /home/services/nginx/logs:/var/log/nginx:rw
+      - /home/services/nginx/confs:/etc/nginx:rw 
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    networks:
+      - inside
+#      - inside1
+
+# docker network create --driver overlay ingress-routing
+networks:
+  inside:
+    external: true
+    name: crm_network
+  inside1:
+    external: true
+    name: crm_network1
+  outside:
+    external: true
+    name: ingress-routing

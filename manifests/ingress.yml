@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  nginx:
+    image: garutilorenzo/docker-swarm-ingress:latest
+    ports:
+        - 443:443 #https
+        - 80:80   #http
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - ingress
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]
+
+# docker network create --driver overlay ingress-routing
+networks:
+  ingress:
+    external: true
+    name: ingress-routing
