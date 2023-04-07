@@ -32,7 +32,7 @@ global $comparevalue;
 
 if ($timevalue < $comparevalue) {
         	echo "</br>SELECT TIME less then $comparevalue";
-	} elseif ($timevalue > 0.6) {
+	} elseif ($timevalue > $comparevalue) {
         	echo "</br>SELECT TIME more then $comparevalue";
 //Send status by telegram bot curl POST
 //  $teltextstring = "Total time QUERY of $i in $dbname is $timevalue";
