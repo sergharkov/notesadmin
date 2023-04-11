@@ -1,0 +1,44 @@
+version: "3.8"
+services:
+
+  php-sql-monitoring:
+    image: ${CONTAINER_NAME} #trafex/php-nginx
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080"]
+      interval: 120s
+      timeout: 50s
+      retries: 3
+      start_period: 60s
+
+#    ports:
+#      - 3000:8080
+    environment:
+      - REPLICA={{.Task.Slot}}
+      - MYSQL_HOST=VAR_MYSQL_HOST
+      - MYSQL_PORT=VAR_MYSQL_PORT
+      - MYSQL_USER=VAR_MYSQL_USER
+      - MYSQL_PASS=VAR_MYSQL_PASS
+      - MYSQL_BASE=VAR_MYSQL_BASE
+      - TIME_MONITOR=7
+    volumes:
+      - ./index_total.php:/var/www/html/index.php
+      - ./logs:/var/logs/
+      - ./php.ini:/etc/php81/php.ini
+    networks:
+      - inside0
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      resources:
+        limits:
+          memory: 4096M
+          cpus: "2"
+networks:
+  inside0:
+    external: true
+    name: crm_network
