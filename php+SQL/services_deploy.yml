@@ -1,0 +1,42 @@
+###Job for deploy
+
+############################################################################
+.deploy_php-sql-monitoring:
+  script:
+    - echo "----------- Step deploy php-sql-monitoring-----------"
+    - rm -f -R ${ManifestPath}
+    - git submodule add --force -b ${GitBranch} ${GIT_manifests}
+    - git submodule update --recursive --remote  
+    - Image="trafex/php-nginx"
+    - rm -rf crm-ci-cd && git clone -b build_number ssh://git@xxxxxxxxxxxxxxxxxxx/crm-ci-cd.git
+    - ls -l
+    - cat ./crm-ci-cd/creds
+    - MYSQL_USER=$(grep ${BRANCH_PATH}_${PROJECT}_MYSQL_USER ./crm-ci-cd/creds | sed "s@${BRANCH_PATH}_${PROJECT}_MYSQL_USER,@@g")
+      && MYSQL_BASE=$(grep ${BRANCH_PATH}_${PROJECT}_MYSQL_BASE ./crm-ci-cd/creds | sed "s@${BRANCH_PATH}_${PROJECT}_MYSQL_BASE,@@g")
+      && MYSQL_HOST=$(grep ${BRANCH_PATH}_${PROJECT}_MYSQL_HOST ./crm-ci-cd/creds | sed "s@${BRANCH_PATH}_${PROJECT}_MYSQL_HOST,@@g")
+      && MYSQL_PORT=$(grep ${BRANCH_PATH}_${PROJECT}_MYSQL_PORT ./crm-ci-cd/creds | sed "s@${BRANCH_PATH}_${PROJECT}_MYSQL_PORT,@@g")
+      && MYSQL_PASS=$(grep ${BRANCH_PATH}_${PROJECT}_MYSQL_PASS ./crm-ci-cd/creds | sed "s@${BRANCH_PATH}_${PROJECT}_MYSQL_PASS,@@g")
+      && MYSQL_USER=$(grep ${BRANCH_PATH}_${PROJECT}_MYSQL_USER ./crm-ci-cd/creds | sed "s@${BRANCH_PATH}_${PROJECT}_MYSQL_USER,@@g")
+    - cd ${ManifestPath}  
+    - echo "$MYSQL_USER"
+    - echo "$MYSQL_USER  $MYSQL_BASE   $MYSQL_HOST   $MYSQL_PORT   $MYSQL_PASS   $MYSQL_USER"        
+    - sed -i "s/VAR_MYSQL_BASE/$MYSQL_BASE/g" ./${ManifestFile}
+    - sed -i "s/VAR_MYSQL_HOST/$MYSQL_HOST/g" ./${ManifestFile}
+    - sed -i "s/VAR_MYSQL_PORT/$MYSQL_PORT/g" ./${ManifestFile}
+    - sed -i "s/VAR_MYSQL_PASS/$MYSQL_PASS/g" ./${ManifestFile}
+    - sed -i "s/VAR_MYSQL_USER/$MYSQL_USER/g" ./${ManifestFile}
+    - cat ${ManifestFile} 
+    ######################################
+    - echo "--------------------- deploy to remote host ---------------------"
+    - ls -la
+    - echo "/home/services/${GitBranch}/${BRANCH_PATH}/${PROJECT}"
+    - ssh ${DestHostUser}@${DestHost} "mkdir -p /home/services/${GitBranch}/${BRANCH_PATH}/${PROJECT}/logs
+      && echo ' ' >> /home/services/${GitBranch}/${BRANCH_PATH}/${PROJECT}/logs/status.log
+      && chmod -R 777 /home/services/${GitBranch}/${BRANCH_PATH}/${PROJECT}/logs/status.log"
+    - scp ./${ManifestFile} ${DestHostUser}@${DestHost}:/home/services/${GitBranch}/${BRANCH_PATH}/${PROJECT}/${ManifestFile}
+    - scp ./index_total.php ${DestHostUser}@${DestHost}:/home/services/${GitBranch}/${BRANCH_PATH}/${PROJECT}/index_total.php
+    - scp ./php.ini ${DestHostUser}@${DestHost}:/home/services/${GitBranch}/${BRANCH_PATH}/${PROJECT}/php.ini
+    - ssh ${DestHostUser}@${DestHost} "export CONTAINER_NAME=${Image}
+      && docker stack deploy swsvc_${BRANCH_PATH}_${PROJECT} -c /home/services/${GitBranch}/${BRANCH_PATH}/${PROJECT}/${ManifestFile} --with-registry-auth
+      && sleep 70
+      && docker service update swsvc_${BRANCH_PATH}_${PROJECT}_php-sql-monitoring"
