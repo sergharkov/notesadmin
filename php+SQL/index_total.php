@@ -11,6 +11,8 @@ echo "++++++++++++++++++++++++++Сheck time select tblnotes than not more then $
 /////////////////////////////////////////////////////////////////////////////
 function GETVALUEARRAY(){
 global $logfile;
+//read file with raws like 
+// 2023-04-19 12:50:38  OKKK    Total time QUERY of 100000 in silver_group_org is 1.1176810264587
 $arr = array();
 echo "</br>$logfile";
 $userfile= file_get_contents($logfile); 
