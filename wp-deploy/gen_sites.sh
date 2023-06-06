@@ -5,15 +5,13 @@ echo "" > /ar-src/list_USER_PASS_DB
 
 #################
 SITES_PATH="/var/www"
-WP_EMAIL="alina.m.giese@gmail.com"
+WP_EMAIL="ksi@gmail.com"
 SQL_root="root"
 SQL_root_pass="MyN3wP4ssw0rd"
-
 list_file="/ar-src/site.list"
-
 listsites=$(cat $list_file)
 echo $listsites
-
+###################################################################
 FIRST_install (){
 ##############  FIST INSATALL  ############################
 ##### PHP
@@ -24,8 +22,6 @@ apt-get install curl htop git wget gnupg gnupg2 nginx -y || apk add curl \
 && curl -o /tmp/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
 && chmod +x /tmp/wp-cli.phar \
 && mv /tmp/wp-cli.phar /usr/local/bin/wp
-
-
 
 apt-get -y install software-properties-common
 apt-get update
@@ -69,10 +65,8 @@ cat << EOF > /var/www/default/index.html
 </body>
 </html>
 EOF
-
-
 }
-
+###################################################################
 GENERATE_NGINX_CONF() {
 
 SITE=$1
@@ -153,12 +147,9 @@ cat << EOF > /etc/nginx/sites-available/$SITE.conf
     }
 EOF
 cat /etc/nginx/sites-available/$SITE.conf
-
-
 }
 
-
-
+###################################################################
 SQLcreate (){
 	SITE=$1
 	SQL_user=$(echo $1 | tr "." "_" | tr "-" "_")
@@ -193,39 +184,32 @@ wp core download --path=$SITES_PATH/$SITE --locale=en_US --allow-root \
 }
 
 
-
+###################################################################
 echo "===========================================================
 Prepearing server:
 ------------------------------------------------------------"
-
-read -r -p "Do you want first install infra? ? [y/N]  :" Yes_No 
-if [[ "$Yes_No" =~ ^([yY][eE][sS]|[yY])$ ]] ; then
-	FIRST_install
-else 
-	echo "continue without prepearing"
-
-fi
-
-
-for listsite in ${listsites[*]}
-do
-echo -e "###################" $listsite "#####################\n"
-SQLpass=$(echo "$(< /dev/urandom tr -dc _A-Z-a-z-0-9- | head -c30)_.=")
-echo $SQLpass
-SQLcreate $listsite $SQLpass
-
-
+	read -r -p "Do you want first install infra? ? [y/N]  :" Yes_No 
+	if [[ "$Yes_No" =~ ^([yY][eE][sS]|[yY])$ ]] ; then
+		FIRST_install
+	else 
+		echo "continue without prepearing"
+	fi
+###################################################################
+   for listsite in ${listsites[*]}
+	do
+		echo -e "###################" $listsite "#####################\n"
+		SQLpass=$(echo "$(< /dev/urandom tr -dc _A-Z-a-z-0-9- | head -c30)_.=")
+		echo $SQLpass
+		SQLcreate $listsite $SQLpass
+###################################################################
 echo "===========================================================
 Prepearing NGINX domains:
 ------------------------------------------------------------"
-read -r -p "Do you want generate sites configs for $listsite ? [y/N]  : " Yes_No
-if [[ "$Yes_No" =~ ^([yY][eE][sS]|[yY])$ ]] ; then
-        GENERATE_NGINX_CONF $listsite
-else
-        echo "continue without generate sites configs "
-fi
-
-
-done
-
+	read -r -p "Do you want generate sites configs for $listsite ? [y/N]  : " Yes_No
+	if [[ "$Yes_No" =~ ^([yY][eE][sS]|[yY])$ ]] ; then
+		GENERATE_NGINX_CONF $listsite
+	else
+		echo "continue without generate sites configs "
+	fi
+  done
 ls -la $SITES_PATH
