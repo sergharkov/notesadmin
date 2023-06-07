@@ -3,21 +3,22 @@
 #apt install gpw -y
 echo "" > /ar-src/list_USER_PASS_DB
 
-#################
+#################################################################################
 SITES_PATH="/var/www"
 WP_EMAIL="ksi@gmail.com"
 SQL_root="root"
 SQL_root_pass="MyN3wP4ssw0rd"
+SQL_dump="./firm13_hitech20_online.sql"
 list_file="/ar-src/site.list"
 listsites=$(cat $list_file)
 echo $listsites
-###################################################################
+#################################################################################
 FIRST_install (){
 ##############  FIST INSATALL  ############################
 ##### PHP
 ##### NGINX
 ##### CertBOT-nginx
-
+#################################################################################
 apt-get install curl htop git wget gnupg gnupg2 nginx -y || apk add curl \
 && curl -o /tmp/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
 && chmod +x /tmp/wp-cli.phar \
@@ -47,109 +48,23 @@ eof
 sudo apt-get -y install certbot
 apt install -y python-certbot-nginx || apt-get -y install python3-certbot-nginx
 mkdir -p /var/www/default
-cat << EOF > /var/www/default/index.html
-<!DOCTYPE html>
-<html>
-<head>
-<title>Welcome to EXP!</title>
-<style>
-    body {
-        width: 35em;
-        margin: 0 auto;
-        font-family: Tahoma, Verdana, Arial, sans-serif;
-    }
-</style>
-</head>
-<body style="background-color:white;">
-<h1 style="color:black;">Welcome to EXP!</h1>
-</body>
-</html>
-EOF
+
+#################################################################################
+cat ./nginx_template_default_wellcome.conf > /etc/nginx/sites-available/default
+
+cat ./nginx_template_default_wellcome.php  > /var/www/html/index.nginx-debian.php
+rm -f /var/www/html/index.nginx-debian.html
+#################################################################################
 }
-###################################################################
+#################################################################################
 GENERATE_NGINX_CONF() {
-
 SITE=$1
-echo "generate config rot $SITE"
-
-cat << EOF > /etc/nginx/sites-available/$SITE.conf
-### Configuration ###
-    server {
-        listen 80;
-        listen [::]:80;
-        listen 443;
-        listen [::]:443;
-        server_name $SITE www.$SITE;
-        root /var/www/$SITE;
-        index index.php index.html index.htm index.nginx-debian.html;
-
-        location / {
-            try_files $uri $uri/ /index.php$is_args$args;
-        }
-
-        proxy_connect_timeout 3600;
-        proxy_send_timeout 3600;
-        proxy_read_timeout 3600;
-        send_timeout 3600;
-        client_max_body_size 100M;
-
-        location ~ "^\/([a-z0-9]{{28,32}})\.html" {
-            add_header Content-Type text/plain;
-            return 200 $1;
-        }
-
-        location ~ \.php$ {
-            fastcgi_split_path_info ^(.+\.php)(/.+)$;
-            fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
-            fastcgi_index index.php;
-            include fastcgi_params;
-            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-            fastcgi_param REMOTE_ADDR $remote_addr;
-            fastcgi_param HTTP_X_FORWARDED_FOR $http_x_forwarded_for;
-            fastcgi_param HTTP_X_REAL_IP $http_x_real_ip;
-            fastcgi_param HTTP_CF_CONNECTING_IP $http_cf_connecting_ip;
-            fastcgi_intercept_errors off;
-            fastcgi_buffer_size 16k;
-            fastcgi_buffers 4 16k;
-            fastcgi_read_timeout 3600;
-        }
-
-        location ~* \.(jpg|jpeg|png|gif|ico|css|js|mp4|svg|woff|woff2|ttf)$ {
-            expires 365d;
-        }
-
-        location ~* /(?:uploads|files)/.*.php$ {
-            deny all;
-        }
-
-        location ~* /*.sql {
-            deny all;
-        }
-
-        location ~* /.git/* {
-            deny all;
-        }
-        location  ^~ /wp-cron.php {
-               allow 127.0.0.1;
-        }
-
-        location ~ /\.ht {
-                deny all;
-        }
-
-        location = /xmlrpc.php {
-            deny all;
-        }
-
-        location ~ /\. {
-            deny all;
-        }
-    }
-EOF
-cat /etc/nginx/sites-available/$SITE.conf
+	echo "generate config for $SITE"
+	sed "s/WPDOMAINSITE/$SITE/g" nginx_template.conf >  /etc/nginx/sites-available/$SITE.conf 
+	cat /etc/nginx/sites-available/$SITE.conf
+	ln /etc/nginx/sites-available/$SITE.conf /etc/nginx/sites-enabled/$SITE.conf
 }
-
-###################################################################
+#################################################################################
 SQLcreate (){
 	SITE=$1
 	SQL_user=$(echo $1 | tr "." "_" | tr "-" "_")
@@ -169,22 +84,24 @@ echo "==============================================="
 wp_admin=root
 wp_pass=$(date +%s|sha256sum|base64|head -c 20)
 
-echo "SITE= $SITE  SQL_user= $SQL_user  SQL_db= $SQL_db  SQL_pass= $SQL_pass wp_pass= $wp_pass  wp_admin= $wp_admin"  >> /ar-src/list_USER_PASS_DB
-
+echo "SITE= $SITE  SQL_user= $SQL_user  SQL_db= $SQL_db  SQL_pass= $SQL_pass wp_pass= $SQL_pass wp_admin= $wp_admin"  >> /ar-src/list_USER_PASS_DB
 mysql -u$SQL_root -p$SQL_root_pass -e "$SQL_create_user_db" 
+
 mkdir -p $SITES_PATH/$SITE
 chown -R www-data:www-data $SITES_PATH/$SITE
 
-
-#cp /tmp/wp-cli.phar  $SITES_PATH/$SITE/ 
+#WP deploy clear WP from default template
 wp core download --path=$SITES_PATH/$SITE --locale=en_US --allow-root \
 && wp config create --path=$SITES_PATH/$SITE --dbname=$SQL_user --dbuser=$SQL_user --dbpass=$SQL_pass --dbhost=localhost --allow-root --skip-check \
 && wp core install --skip-email --url=$SITE --title=$SITE --admin_user=$wp_admin --admin_password=$SQL_pass --admin_email=$WP_EMAIL --allow-root --path=$SITES_PATH/$SITE
 
+####### RESTORE DUMP from SQL-template #######
+mysql -u$SQL_user -p$SQL_pass $SQL_user < ./$SQL_dump
+##############################################
+
+chown -R www-data:www-data $SITES_PATH/$SITE
 }
-
-
-###################################################################
+#################################################################################
 echo "===========================================================
 Prepearing server:
 ------------------------------------------------------------"
@@ -194,22 +111,32 @@ Prepearing server:
 	else 
 		echo "continue without prepearing"
 	fi
-###################################################################
+#################################################################################
    for listsite in ${listsites[*]}
 	do
 		echo -e "###################" $listsite "#####################\n"
 		SQLpass=$(echo "$(< /dev/urandom tr -dc _A-Z-a-z-0-9- | head -c30)_.=")
 		echo $SQLpass
 		SQLcreate $listsite $SQLpass
-###################################################################
+#################################################################################
 echo "===========================================================
 Prepearing NGINX domains:
 ------------------------------------------------------------"
-	read -r -p "Do you want generate sites configs for $listsite ? [y/N]  : " Yes_No
-	if [[ "$Yes_No" =~ ^([yY][eE][sS]|[yY])$ ]] ; then
-		GENERATE_NGINX_CONF $listsite
-	else
-		echo "continue without generate sites configs "
-	fi
+
+GENERATE_NGINX_CONF $listsite
+
+	# read -r -p "Do you want generate sites configs for $listsite ? [y/N]  : " Yes_No
+	# if [[ "$Yes_No" =~ ^([yY][eE][sS]|[yY])$ ]] ; then
+	# 	GENERATE_NGINX_CONF $listsite
+	# else
+	# 	echo "continue without generate sites configs "
+	# fi
   done
 ls -la $SITES_PATH
+nginx -t
+nginx -s reload
+
+
+# rm -rf /var/www/*.ksi.kiev.ua
+# rm -rf /etc/nginx/sites-enabled/*.ksi.kiev.ua.conf
+# rm -rf /etc/nginx/sites-available/*.ksi.kiev.ua.conf 
