@@ -1,0 +1,19 @@
+$Name = "issp_soc"
+$Password = "*****"
+$SecureString = ConvertTo-SecureString -AsPlainText $Password -Force
+$Description = "Event Log Readers for Service"
+$NewUserSwitches = @{
+    Name                     = $Name
+    Password                 = $SecureString
+    AccountNeverExpires      = $true
+    PasswordNeverExpires     = $true
+    Description              = $Description
+    }
+New-LocalUser @NewUserSwitches -Verbose
+#
+$NewLocalGroupMember = @{
+    Member = $Name
+    Group  = "Event Log Readers"
+}
+Add-LocalGroupMember @NewLocalGroupMember -Verbose
+#
