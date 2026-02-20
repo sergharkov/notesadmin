@@ -3,7 +3,7 @@
 # Настройки подключения
 HOST="192.168.30.1"
 USER="restapi"
-PASS="***********************"
+PASS="******************"
 
 # Выполнение через встроенный Python-посредник
 # --- СОХРАНЕНИЕ В ПЕРЕМЕННУЮ ---
@@ -65,8 +65,6 @@ finally:
 EOF
 )
 
-
-# TELEGRAM_CHAT="${2:--5013323561}"
 TELEGRAM_BOT_CHATID="${3:-517090498}"
 teletram_API="https://api.telegram.org/bot7482410376:AAFua_zEhM3nW2dEiVtBJuGWJ7GPE7UBLc0/sendMessage"
 
@@ -76,12 +74,28 @@ send_message_telegram() {
     local TELEGRAM_CHAT_f="${2:-$TELEGRAM_BOT_CHATID}"
     local TELEGRAM_MESSAGE_TEXT="${3:-"No message provided"}"
     echo -e "\n---------------------- START function!\n"
+    # Формируем текст с форматированием
+    local ESCAPED_TEXT=$(echo "$TELEGRAM_MESSAGE_TEXT" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+    echo -e "\n---------------------- START function!\n"
+
+    # 2. Формируем сообщение. 
+    # Используем двойные кавычки для всей строки, чтобы переменные и $(date) раскрылись.
+    # Для переноса строк в кавычках просто нажимаем Enter.
+    local MESSAGE_TEXT="<b>🚀 Список адресов требуемых внимания:</b>
+--------------------------
+📌 Дата и время: $(date '+%Y-%m-%d %H:%M:%S')
+📍 Источник: MikroTik Router $HOST
+⚠️ --------------------------
+<i>$ESCAPED_TEXT</i>"
+
+
+
     curl -s -X POST $teletram_API_f \
             -d chat_id=$TELEGRAM_CHAT_f \
-            -d text="$TELEGRAM_MESSAGE_TEXT"
+            -d parse_mode="HTML" \
+            -d text="$MESSAGE_TEXT"
     echo -e "\n---------------------- END function!\n"
 }
-
 
 # --- ТЕПЕРЬ МОЖНО ФИЛЬТРОВАТЬ И СОРТИРОВАТЬ ПЕРЕМЕННУЮ ---
 # 2. Подготовка списка IP (извлекаем кол-во и IP)
@@ -95,7 +109,6 @@ errors_only=$(echo "$log_data" | grep -iE "error|critical|warning")
 # Пример сортировки по алфавиту (сообщение находится после второй '|')
 sorted_logs=$(echo "$log_data" | sort -t '|' -k 3)
 declare -A ip_data_table
-
 
 # Вывод результата
 echo "--- Отсортированные логи ---"
@@ -143,7 +156,7 @@ if [ "$total_items" -eq 0 ]; then
     echo "Содержимое переменной list_of_rdp_attempts:"
     echo "$list_of_rdp_attempts"
 else
-   send_message_telegram "$teletram_API" "$TELEGRAM_BOT_CHATID" "Топ 10 IP по попыткам RDP:\n$list_of_rdp_attempts"
+   send_message_telegram "$teletram_API" "$TELEGRAM_BOT_CHATID" "$list_of_rdp_attempts"
     # for current_ip in "${!ip_data_table[@]}"; do
     #     # # Распаковываем данные
     #     IFS='|' read -r c_val geo_val org_val <<< "${ip_data_table[$current_ip]}"
